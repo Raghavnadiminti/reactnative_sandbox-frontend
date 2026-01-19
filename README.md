@@ -96,6 +96,24 @@ This separation makes the system more stable and scalable.
 
 ---
 
+---
+
+## Related Repositories
+
+This project is built using two main repositories:
+
+### 1) Node.js Proxy Server  
+Handles port management, container routing, Redis tracking, and cleanup logic.
+
+- https://github.com/Raghavnadiminti/nodejs_proxyserver  
+
+### 2) React Native Sandbox  
+Frontend playground where users write code and run it in the browser.
+
+- https://github.com/Raghavnadiminti/ReactNative-Sandbox  
+
+---
+
 ## Features
 
 - Browser-based React Native playground
