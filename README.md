@@ -1,70 +1,118 @@
-# Getting Started with Create React App
+# React-Native-Pad
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React-Native-Pad is a browser-based playground to learn and experiment with **React Native**,.  
+Users write React Native code in the browser, click **Run**, and instantly see the output — all without setting up anything locally.
 
-## Available Scripts
+The main goal of this project is simple:  
+Make learning React Native easy, fast, and accessible directly from the browser.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Project Idea
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+I wanted to build a platform where:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Beginners can learn React Native by writing small examples.
+- Users can build basic UI components and see live output.
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+But running user-written code on a server is not simple.  
+It needs isolation, security, scalability, and cleanup.
 
-### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## How I Broke Down the 
 
-### `npm run eject`
+First, I needed a way to isolate each user’s code.  
+For this, I chose **Docker**.  
+Every time a user clicks Run, their code runs inside a separate container.  
+This keeps users safe from each other and prevents server crashes from bad code.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Next, I had to show the output to the user.  
+Each container needs a port, but I cannot expose unlimited ports manually.  
+So I built a **custom proxy server using Node.js**.  
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The flow works like this:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- User clicks Run
+- Request goes to proxy
+- Proxy finds a free port
+- Proxy starts a container with that port
+- Proxy routes user traffic to that container
+- Everything logically 
+To make this work smoothly, I built my own **port management system**.  
+It tracks which ports are free, which are in use, and releases them when containers stop.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Users often click Run many times.  
+To handle this, each user gets a unique identity using a crypto-based hash stored in browser `localStorage`.  
+This helps me generate unique container names and avoid conflicts.Thinking of adding ratelimiting also here
 
-## Learn More
+Docker images were becoming very large, which made startup slow.  
+To fix this, I used **multi-stage Docker builds**.  
+Only the final required files are kept in the production image, which makes it smaller and faster.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Over time, unused containers start wasting memory and ports.  
+So I created a background cleanup system using cron jobs.  
+It checks Redis for the last time a user ran code.  
+If a container is inactive for more than 30 minutes, it is automatically stopped, deleted, and its port is released.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+For fast tracking of users, ports, and containers, I used **Redis**.  
+It stores mappings like:
 
-### Code Splitting
+- user → container
+- container → port
+- last run time
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+This makes lookups instant and reliable.
 
-### Analyzing the Bundle Size
+Finally, I deployed everything on **AWS EC2** using Linux.  
+I used two instances:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- One for proxy and Redis
+- One for running Docker containers
 
-### Making a Progressive Web App
+This separation makes the system more stable and scalable.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## 🛠 Tech Stack
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- Frontend:
+  - React (browser-based editor)
+  
 
-### Deployment
+- Backend:
+  - Node.js (Proxy server)
+  - Redis (State management)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- Infrastructure:
+  - Docker
+  - Multi-stage builds
+  - Cron jobs
+  - AWS EC2
+  - Linux
 
-### `npm run build` fails to minify
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Features
+
+- Browser-based React Native playground
+- Isolated environment for each user
+- Dynamic port assignment
+- Custom proxy routing
+- Redis-based tracking system
+- Automatic cleanup of unused containers
+- Fast startup with optimized Docker images
+- Cloud deployed 
+
+---
+
+
+
+This project is not just about React Native.  
+It is about building a real system — from frontend to backend to DevOps — and understanding how everything works together.
+
+Built with curiosity, debugging, and lots of coffee   
+— Raghavendra
